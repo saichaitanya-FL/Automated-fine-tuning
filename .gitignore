@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Outputs
+output/
+output_res/
+results/
+*.csv
+*.log
+
+# Models
+models/
+*.bin
+*.safetensors
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data
+*.pdf
+train_data*.csv
+test_data*.csv
+
+# Unnecessary files
+STRUCTURE.md
+USAGE.md
