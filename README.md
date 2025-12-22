@@ -1,6 +1,6 @@
 # Automated Fine-tuning System
 
-A modular, production-ready system for automated LLM fine-tuning with rule-based experiment execution and intelligent model selection.
+A modular, production-ready system for automated LLM fine-tuning with rule-based experiment execution and intelligent model selection. Cross-platform compatible (Windows, Linux, macOS) with automatic GPU detection and CUDA support.
 
 ## 🌟 Features
 
@@ -10,57 +10,127 @@ A modular, production-ready system for automated LLM fine-tuning with rule-based
 - **📈 Comprehensive Metrics**: Precision, Recall, F1 Score, and Latency tracking
 - **🔄 PDF-to-QA Generation**: Automatic dataset creation from PDF documents
 - **💾 Dataset-specific Results**: Organized output with date tracking per dataset
-- **🌐 Cross-platform**: Works on Local PC, Google Colab, Kaggle, and Cloud environments
+- **🌐 Cross-platform**: Works on Windows, Linux, macOS, Google Colab, and Cloud environments
 - **📝 Advanced Logging**: Detailed logging system for debugging and monitoring
-- **🖥️ GPU Optimization**: Automatic GPU detection with CPU fallback
+- **🖥️ GPU Optimization**: Intelligent GPU detection with automatic CUDA-compatible PyTorch installation
+- **💾 Memory Management**: Automatic batch size adjustment for low-memory GPUs
 
 ## 📋 Table of Contents
 
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Output Structure](#output-structure)
-- [Platform-Specific Instructions](#platform-specific-instructions)
+- [Platform-Specific Notes](#platform-specific-notes)
 - [Advanced Features](#advanced-features)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
 
+## Prerequisites
+
+- **Python 3.8 or higher**
+- **NVIDIA GPU** (recommended, 4GB+ VRAM) - Works with any NVIDIA GPU (RTX, GTX, Quadro, etc.)
+- **NVIDIA GPU Driver** (required for GPU acceleration)
+  - Verify driver installation: `nvidia-smi` in terminal
+  - Download from [NVIDIA Driver Downloads](https://www.nvidia.com/Download/index.aspx)
+- **16GB+ RAM** (recommended)
+- **Internet connection** (for downloading models and packages)
+
 ## 🔧 Installation
 
-### Prerequisites
-
-- Python 3.8 or higher
-- CUDA-capable GPU
-- 16GB+ RAM
-- Internet connection
-
-### Setup
+### Step 1: Clone the Repository
 
 ```bash
-# Clone the repository
 git clone https://github.com/FloTorch/Automated-fine-tuning.git
 cd Automated-fine-tuning
-
-# Install dependencies (automatic on first run)
-pip install -r requirements.txt
 ```
 
-The system automatically installs all required packages on first run, including:
-- PyTorch
-- Unsloth
-- Transformers
-- TRL
-- Sentence Transformers
-- And more...
+### Step 2: Create Virtual Environment
+
+**On Windows:**
+```powershell
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+.\venv\Scripts\activate
+```
+
+**On Linux/macOS:**
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+```
+
+**Note:** After activation, your terminal prompt should show `(venv)` at the beginning.
+
+### Step 3: Install Packages
+
+The system includes an automated package installer that detects your OS and GPU, then installs the appropriate packages:
+
+```bash
+# Install all required packages (automatic GPU detection)
+python run.py --install-packages
+```
+
+**What this command does:**
+- ✅ Upgrades pip to the latest version
+- ✅ Detects your operating system (Windows/Linux/macOS)
+- ✅ Installs Unsloth (with Windows-specific extras if on Windows)
+- ✅ Installs `triton-windows==3.3.1.post21` on Windows
+- ✅ Detects CUDA version using `nvidia-smi`
+- ✅ Installs PyTorch 2.7.1 with appropriate CUDA support
+- ✅ Installs torchvision, xformers, and other dependencies
+- ✅ Installs additional packages (synthetic-data-kit, openai, sentence-transformers)
+
+**Installation Time:** Approximately 5-15 minutes depending on your internet connection.
+
+**Expected Output:**
+```
+============================================================
+Package Installation with GPU Detection
+============================================================
+Operating System detected: Windows
+Upgrading pip...
+Windows detected. Installing unsloth[windows]...
+Installing triton-windows==3.3.1.post21 for Windows...
+Detecting CUDA version...
+CUDA version detected: 11.8
+Installing PyTorch 2.7.1 with CUDA 11.8 support
+...
+Installation completed successfully
+============================================================
+```
+
+### Step 4: Verify Installation
+
+```bash
+# Check if PyTorch is installed correctly
+python -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA Available: {torch.cuda.is_available()}')"
+
+# If GPU is available, you should see:
+# PyTorch: 2.7.1+cu118 (or similar)
+# CUDA Available: True
+```
 
 ## 🚀 Quick Start
 
 ### Basic Usage
 
+After installation, you can run experiments:
+
 ```bash
+# Make sure virtual environment is activated
+# Windows: .\venv\Scripts\activate
+# Linux/macOS: source venv/bin/activate
+
 # Run a single experiment configuration
 python run.py configs/config_gemma3.json
 
@@ -93,14 +163,15 @@ finetuning-system/
 │   │   ├── rule_engine.py        # Rule-based experiment orchestration
 │   │   └── recommendation_engine.py  # Model selection logic
 │   ├── __init__.py
-│   └── utils.py                   # Utility functions
+│   └── utils.py                   # Utility functions (package installation, GPU detection)
 ├── configs/                       # Configuration files
 │   ├── config_gemma3.json        # Gemma model configuration
 │   ├── config_qwen3.json         # Qwen model configuration
 │   └── config_example_with_comments.jsonc
 ├── run.py                         # Main entry point
-├── requirements.txt               # Python dependencies
+├── requirements.txt               # Python dependencies (reference only)
 ├── finetuning_system.log         # Auto-generated log file
+├── output/                        # Training checkpoints and outputs
 └── README.md                      # This file
 ```
 
@@ -112,45 +183,44 @@ Create a JSON configuration file in the `configs/` directory:
 
 ```json
 {
-  "system_prompt": "You are a helpful assistant.",
-  "output_dir": "./results",
-  
   "dataset": {
-    "name": "my_dataset",
-    "type": "file",                    // Options: "file", "huggingface", "folder"
-    "path": "data.csv",
-    "splitter": "csv",                 // Options: "csv", "json", "pdf"
-    "input_fields": ["question"],
-    "output_fields": ["answer"],
+    "type": "huggingface",
+    "name": "databricks/databricks-dolly-15k",
+    "path": "databricks/databricks-dolly-15k",
+    "hf_token": "your_huggingface_token",
+    "splitter": "csv",
+    "input_fields": ["instruction", "context"],
+    "output_fields": ["response"],
     "batch_config": {
-      "first_batch": 0.3,              // 30% of training data
-      "second_batch": 0.3,             // 30% of training data
-      "third_batch": 0.4,              // 40% of training data
-      "test_batch": 0.2                // 20% of test data
+      "first_batch": 0.04,
+      "second_batch": 0.06,
+      "third_batch": 0.08,
+      "test_batch": 0.01
     }
   },
-  
+  "output_dir": "results",
+  "system_prompt": "You are a helpful assistant.",
   "experiments": {
     "exp1": {
       "run_always": true,
       "train_batch": "first_batch",
       "model": {
-        "model_name": "unsloth/gemma-2-2b-it-bnb-4bit",
-        "chat_template": "gemma",
+        "model_name": "unsloth/gemma-3-270m-it",
+        "chat_template": "gemma3",
         "max_seq_len": 2048,
-        "rank": 16,
-        "alpha": 16,
+        "rank": 64,
+        "alpha": 128,
         "dropout": 0
       },
       "sft": {
-        "batch_size": 2,
-        "epochs": 1,
-        "learning_rate": 2e-4,
-        "logging_steps": 10,
+        "batch_size": 8,
+        "epochs": 2,
+        "learning_rate": 2e-5,
+        "logging_steps": 50,
         "eval_steps": 50,
         "save_steps": 50,
-        "eval_accumulation_steps": 1,
-        "early_stopping_criteria": true
+        "eval_accumulation_steps": 30,
+        "early_stopping_criteria": false
       },
       "rules": []
     }
@@ -175,10 +245,11 @@ Create a JSON configuration file in the `configs/` directory:
 ```json
 "dataset": {
   "type": "huggingface",
-  "path": "squad",
+  "name": "databricks/databricks-dolly-15k",
+  "path": "databricks/databricks-dolly-15k",
   "hf_token": "your_token_here",
-  "input_fields": ["question", "context"],
-  "output_fields": ["answers"]
+  "input_fields": ["instruction", "context"],
+  "output_fields": ["response"]
 }
 ```
 
@@ -192,7 +263,7 @@ Create a JSON configuration file in the `configs/` directory:
     "llm_config": {
       "api_base": "https://api.openai.com/v1",
       "api_key": "your_api_key",
-      "model_name": "gpt-4"
+      "model_name": "gpt-4o-mini"
     },
     "chunk_size": 2048,
     "overlap": 200,
@@ -236,6 +307,7 @@ Define conditional experiments based on previous results:
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
 | `config_files` | str (required) | - | Path(s) to configuration JSON file(s) |
+| `--install-packages` | flag | - | Install all required packages with GPU detection |
 | `--threshold-f1` | float | 0.2 | F1 score threshold for model selection |
 | `--threshold-latency` | float | 0.3 | Latency threshold for model selection |
 | `--factors` | list | `['accuracy', 'latency']` | Optimization factors |
@@ -243,6 +315,9 @@ Define conditional experiments based on previous results:
 ### Examples
 
 ```bash
+# Install packages (first time setup)
+python run.py --install-packages
+
 # Basic run
 python run.py configs/config_gemma3.json
 
@@ -263,18 +338,17 @@ python run.py configs/config_gemma3.json --factors latency
 Results are organized by dataset with date tracking:
 
 ```
-output_dir/
+results/
 ├── metrics_dataset_name.csv       # Metrics with date column
 ├── logs_dataset_name_exp1.csv     # Training logs for exp1
 ├── logs_dataset_name_exp2.csv     # Training logs for exp2
-├── finetuning_system.log          # System logs
-└── models/
-    └── model_name/
-        ├── exp1/                   # Fine-tuned model files
-        │   ├── adapter_config.json
-        │   ├── adapter_model.bin
-        │   └── tokenizer files
-        └── exp2/
+└── finetuning_system.log          # System logs
+
+output/
+└── checkpoint-{step}/            # Training checkpoints
+    ├── adapter_config.json
+    ├── adapter_model.safetensors
+    └── tokenizer files
 ```
 
 ### Metrics CSV Format
@@ -290,13 +364,44 @@ output_dir/
 | `dataset` | Dataset name |
 | `date` | Experiment date (YYYY-MM-DD) |
 
-## 🌐 Platform-Specific Instructions
+## 🌐 Platform-Specific Notes
 
-### Local PC with GPU
+### Windows
 
+**Features:**
+- ✅ Automatic installation of `triton-windows==3.3.1.post21`
+- ✅ Automatic multiprocessing fixes for Windows compatibility
+- ✅ Works with any NVIDIA GPU (RTX, GTX, Quadro, etc.)
+- ✅ Automatic memory optimization for low-memory GPUs
+
+**Setup:**
+```powershell
+# Create and activate venv
+python -m venv venv
+.\venv\Scripts\activate
+
+# Install packages
+python run.py --install-packages
+
+# Run experiments
+python run.py configs/config_gemma3.json
+```
+
+**Note:** The system automatically:
+- Disables optimized loss functions that require Triton compilation
+- Forces single-process mode for dataset processing
+- Adjusts batch size for GPUs with < 6GB memory
+
+### Linux/macOS
+
+**Setup:**
 ```bash
-# Ensure CUDA is installed
-nvidia-smi
+# Create and activate venv
+python3 -m venv venv
+source venv/bin/activate
+
+# Install packages
+python run.py --install-packages
 
 # Run experiments
 python run.py configs/config_gemma3.json
@@ -308,6 +413,9 @@ python run.py configs/config_gemma3.json
 # Clone repository
 !git clone <your-repo-url>
 %cd finetuning-system
+
+# Install packages
+!python run.py --install-packages
 
 # Run experiments
 !python run.py configs/config_gemma3.json
@@ -321,19 +429,8 @@ python run.py configs/config_gemma3.json
 4. **Run**:
 
 ```python
+!python /kaggle/working/finetuning-system/run.py --install-packages
 !python /kaggle/working/finetuning-system/run.py configs/config_gemma3.json
-```
-
-### Cloud Platforms (AWS, GCP, Azure)
-
-```bash
-# SSH into instance
-ssh user@instance-ip
-
-# Clone and run
-git clone <your-repo-url>
-cd finetuning-system
-python run.py configs/config_gemma3.json
 ```
 
 ## 🔬 Advanced Features
@@ -341,10 +438,20 @@ python run.py configs/config_gemma3.json
 ### GPU Support
 
 The system automatically:
-- ✅ Detects CUDA-enabled GPUs
+- ✅ Detects CUDA-enabled GPUs (any NVIDIA GPU)
+- ✅ Determines compatible CUDA version from driver
+- ✅ Installs PyTorch with appropriate CUDA support
 - ✅ Falls back to CPU if no GPU available
 - ✅ Logs GPU memory and CUDA version
 - ✅ Uses mixed precision training (FP16/BF16)
+- ✅ Automatically adjusts batch size for low-memory GPUs (< 6GB)
+
+### Memory Management
+
+For GPUs with less than 6GB memory:
+- Automatically reduces batch size
+- Increases gradient accumulation to maintain effective batch size
+- Enables memory-efficient allocation
 
 ### Logging System
 
@@ -378,26 +485,68 @@ Stops training if evaluation loss doesn't improve for 5 consecutive evaluations.
 ### Common Issues
 
 #### 1. CUDA Out of Memory
-```bash
-# Reduce batch size in config
-"batch_size": 1  # or 2
-```
 
-#### 2. Slow Training
-- Ensure GPU is being used (check logs)
+**Solution:**
+- The system automatically reduces batch size for GPUs < 6GB
+- Manually reduce batch size in config: `"batch_size": 2` or `1`
 - Reduce `max_seq_len` in model config
-- Increase `batch_size` if memory allows
+
+#### 2. Package Installation Fails
+
+**Solution:**
+```bash
+# Upgrade pip first
+python -m pip install --upgrade pip
+
+# Try installing packages again
+python run.py --install-packages
+
+# If specific package fails, install manually:
+pip install <package-name>
+```
 
 #### 3. Import Errors
+
+**Solution:**
 ```bash
-# Reinstall dependencies
-pip install --upgrade -r requirements.txt
+# Make sure virtual environment is activated
+# Windows: .\venv\Scripts\activate
+# Linux/macOS: source venv/bin/activate
+
+# Reinstall packages
+python run.py --install-packages
 ```
 
-#### 4. Dataset Loading Issues
-- Verify file paths are correct
-- Check CSV/JSON format matches expected structure
-- Ensure `input_fields` and `output_fields` exist in dataset
+#### 4. GPU Not Detected
+
+**Solution:**
+```bash
+# Verify NVIDIA driver is installed
+nvidia-smi
+
+# If nvidia-smi fails, install NVIDIA drivers:
+# Windows: https://www.nvidia.com/Download/index.aspx
+# Linux: Use your distribution's package manager
+```
+
+#### 5. Windows-Specific Issues
+
+**Triton Compilation Errors:**
+- Automatically handled by the system
+- The system disables optimized loss functions on Windows
+- Uses standard PyTorch cross-entropy loss instead
+
+**Multiprocessing Errors:**
+- Automatically handled by the system
+- Forces single-process mode on Windows
+
+#### 6. Slow Training
+
+**Solutions:**
+- Ensure GPU is being used (check logs for "GPU detected")
+- Reduce `max_seq_len` in model config
+- Increase `batch_size` if memory allows
+- Check GPU utilization: `nvidia-smi` during training
 
 ### Debug Mode
 

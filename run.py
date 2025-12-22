@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """
 Automated Fine-tuning System - Main Entry Point
-Run: python run.py config.json
+
+Usage:
+    # Install packages first
+    python run.py --install-packages
+    
+    # Run experiments after installation
+    python run.py config.json
+    python run.py config1.json config2.json --threshold-f1 0.3
 """
 
-import subprocess
 import sys
 import os
 import logging
@@ -20,21 +26,81 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Now import after installation
+# Import argparse
 import argparse
-import torch
-from src.engine import RecommendationEngine
+
+
+def install_packages_command():
+    """Install required packages with GPU detection."""
+    logger.info("=" * 60)
+    logger.info("Starting package installation with GPU detection...")
+    logger.info("=" * 60)
+    try:
+        from src.utils import install_packages
+        install_packages()
+        logger.info("=" * 60)
+        logger.info("Package installation completed successfully!")
+        logger.info("You can now run experiments using: python run.py config.json")
+        logger.info("=" * 60)
+    except Exception as e:
+        logger.error("=" * 60)
+        logger.error("CRITICAL: Package installation failed!")
+        logger.error("=" * 60)
+        logger.error(f"Error: {str(e)}")
+        logger.error("\nTroubleshooting:")
+        logger.error("1. Check internet connection")
+        logger.error("2. Verify GPU drivers: nvidia-smi")
+        logger.error("3. Check logs for detailed error messages")
+        logger.error("=" * 60)
+        sys.exit(1)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Automated Fine-tuning System')
-    parser.add_argument('config_files', nargs='+', help='Path(s) to config JSON file(s)')
+    parser = argparse.ArgumentParser(
+        description='Automated Fine-tuning System',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Install packages first
+  python run.py --install-packages
+  
+  # Run experiments after installation
+  python run.py config.json
+  python run.py config1.json config2.json --threshold-f1 0.3
+        """
+    )
+    parser.add_argument('--install-packages', action='store_true', 
+                       help='Install required packages with GPU detection')
+    parser.add_argument('config_files', nargs='*', help='Path(s) to config JSON file(s)')
     parser.add_argument('--threshold-f1', type=float, default=0.2, help='F1 threshold (default: 0.2)')
     parser.add_argument('--threshold-latency', type=float, default=0.3, help='Latency threshold (default: 0.3)')
     parser.add_argument('--factors', nargs='+', default=['accuracy', 'latency'], help='Optimization factors (default: accuracy latency)')
     
     args = parser.parse_args()
-
+    
+    # Handle package installation command
+    if args.install_packages:
+        install_packages_command()
+        return
+    
+    # Check if config files are provided
+    if not args.config_files:
+        parser.error("No config files provided. Use --install-packages to install packages first, or provide config file(s).")
+    
+    # Check if torch is available (packages are installed)
+    try:
+        import torch
+    except ImportError:
+        logger.error("=" * 60)
+        logger.error("ERROR: Required packages are not installed!")
+        logger.error("=" * 60)
+        logger.error("Please run package installation first:")
+        logger.error("  python run.py --install-packages")
+        logger.error("=" * 60)
+        sys.exit(1)
+    
+    # Import engine after confirming packages are installed
+    from src.engine import RecommendationEngine
     
     # Check GPU availability
     if torch.cuda.is_available():

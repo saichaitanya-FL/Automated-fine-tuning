@@ -42,3 +42,5 @@ test_data*.csv
 # Unnecessary files
 STRUCTURE.md
 USAGE.md
+
+unsloth_compiled_cache/
